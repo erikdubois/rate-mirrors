@@ -8,4 +8,5 @@ pub mod chaotic;
 pub mod endeavouros;
 pub mod manjaro;
 pub mod rebornos;
+pub mod arcolinux;
 pub mod stdin;

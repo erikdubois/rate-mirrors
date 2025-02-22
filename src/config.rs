@@ -10,6 +10,7 @@ use crate::target_configs::chaotic::ChaoticTarget;
 use crate::target_configs::endeavouros::EndeavourOSTarget;
 use crate::target_configs::manjaro::ManjaroTarget;
 use crate::target_configs::rebornos::RebornOSTarget;
+use crate::target_configs::arcolinux::ArcoLinuxTarget;
 use crate::target_configs::stdin::StdinTarget;
 // use crate::target_configs::ubuntu::UbuntuTarget;
 use ambassador::{delegatable_trait, Delegate};
@@ -127,6 +128,10 @@ pub enum Target {
     /// test rebornos mirrors
     #[command(name = "rebornos")]
     RebornOS(RebornOSTarget),
+
+    /// test arcolinux mirrors
+    #[command(name = "arcolinux")]
+    ArcoLinux(ArcoLinuxTarget),
 }
 
 #[derive(Debug, Parser)]
