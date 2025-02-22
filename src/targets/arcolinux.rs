@@ -20,7 +20,7 @@ impl LogFormatter for ArcoLinuxTarget {
             &self.arch
         };
 
-        format!("Server = {}{}/$repo", mirror.url, arch)
+        format!("Server = {}$repo/{}", mirror.url, arch)
     }
 }
 
@@ -46,8 +46,8 @@ impl FetchMirrors for ArcoLinuxTarget {
 
         let urls = output
             .lines()
-            .filter(|line| !line.starts_with('#'))
-            .map(|line| line.replace("Server = ", "").replace("$repo/$arch", ""))
+            .filter(|line| line.starts_with("Server = ") || line.starts_with("#Server = "))
+            .map(|line| line.trim_start_matches('#').replace("Server = ", "").replace("$repo/$arch", ""))
             .filter(|line| !line.is_empty())
             .filter_map(|line| Url::parse(&line).ok())
             .filter(|url| config.is_protocol_allowed_for_url(url));
