@@ -1,7 +1,7 @@
 use crate::config::{AppError, Config, FetchMirrors, LogFormatter};
 use crate::mirror::Mirror;
 use crate::target_configs::arcolinux::ArcoLinuxTarget;
-use linkify::{LinkFinder, LinkKind};
+use reqwest;
 use std::fmt::Display;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
@@ -14,7 +14,13 @@ impl LogFormatter for ArcoLinuxTarget {
     }
 
     fn format_mirror(&self, mirror: &Mirror) -> String {
-        format!("Server = {}", mirror.url)
+        let arch = if self.arch == "auto" {
+            "$arch"
+        } else {
+            &self.arch
+        };
+
+        format!("Server = {}{}/$repo", mirror.url, arch)
     }
 }
 
@@ -26,34 +32,39 @@ impl FetchMirrors for ArcoLinuxTarget {
     ) -> Result<Vec<Mirror>, AppError> {
         let url = "https://raw.githubusercontent.com/arcolinux/arcolinux-mirrorlist/refs/heads/master/etc/pacman.d/arcolinux-mirrorlist";
 
-        let mirrorlist_file_text = Runtime::new().unwrap().block_on(async {
+        let output = Runtime::new().unwrap().block_on(async {
             Ok::<_, AppError>(
                 reqwest::Client::new()
                     .get(url)
                     .timeout(Duration::from_millis(self.fetch_mirrors_timeout))
                     .send()
                     .await?
-                    .text_with_charset("utf-16")
+                    .text_with_charset("utf-8")
                     .await?,
             )
         })?;
 
-        let mut link_finder = LinkFinder::new();
-        link_finder.kinds(&[LinkKind::Url]);
+        let urls = output
+            .lines()
+            .filter(|line| !line.starts_with('#'))
+            .map(|line| line.replace("Server = ", "").replace("$repo/$arch", ""))
+            .filter(|line| !line.is_empty())
+            .filter_map(|line| Url::parse(&line).ok())
+            .filter(|url| config.is_protocol_allowed_for_url(url));
 
-        let mirrors: Vec<_> = link_finder
-            .links(&mirrorlist_file_text)
-            .filter_map(|url| Url::parse(url.as_str()).ok())
-            .filter(|url| config.is_protocol_allowed_for_url(url))
-            .map(|url| Mirror {
-                country: None,
-                url_to_test: url
+        let result: Vec<_> = urls
+            .map(|url| {
+                let url_to_test = url
                     .join(&self.path_to_test)
-                    .expect("failed to join path-to-test"),
-                url,
+                    .expect("failed to join path_to_test");
+                Mirror {
+                    country: None,
+                    url,
+                    url_to_test,
+                }
             })
             .collect();
 
-        Ok(mirrors)
+        Ok(result)
     }
 }

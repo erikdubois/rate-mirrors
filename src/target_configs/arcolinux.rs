@@ -16,10 +16,14 @@ pub struct ArcoLinuxTarget {
     #[arg(
         env = "RATE_MIRRORS_PATH_TO_TEST",
         long,
-        default_value = "ArcoLinux.files",
+        default_value = "arcolinux_repo_3party/x86_64/arcolinux_repo_3party.files",
         verbatim_doc_comment
     )]
     pub path_to_test: String,
+
+    /// Architecture
+    #[arg(env = "RATE_MIRRORS_ARCH", long, default_value = "auto")]
+    pub arch: String,
 
     /// comment prefix to use when outputting
     #[arg(env = "RATE_MIRRORS_COMMENT_PREFIX", long, default_value = "# ")]
